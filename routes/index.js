@@ -1,5 +1,23 @@
 var express = require('express');
 var router = express.Router();
+const mongoose = require("mongoose")
+const dotenv = require("dotenv");
+
+dotenv.config();
+const PORT = process.env.PORT;
+const MONGOURL = process.env.MONGO_URL;
+
+
+
+const productSchema = new mongoose.Schema({
+  productName: String,
+  description: String,
+  price: Number,
+  image: String
+
+})
+const productModel = mongoose.model("product", productSchema)
+
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -111,6 +129,29 @@ router.get('/admin/products', function (req, res, next) {
 
 
   res.render('viewproducts', { title: "Products", products })
+})
+router.get('/admin/add-product', function (req, res) {
+  res.render('addproduct', { title: "Add Products" })
+
+})
+
+router.post('/admin/add-product', async function (req, res) {
+
+  console.log(req.body)
+  console.log(req.files.image)
+  mongoose.connect(MONGOURL).then(() => {
+    console.log("Database connected");
+    const newProduct = new productModel({
+      productName: req.body.productName,
+      description: req.body.description,
+      price: req.body.price,
+      image: req.body.image,
+    })
+    return newProduct.save();
+
+  })//.catch((error) => console.log("error"))
+
+
 })
 
 module.exports = router;
