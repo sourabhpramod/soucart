@@ -3,17 +3,21 @@ var router = express.Router();
 const mongoose = require("mongoose")
 const dotenv = require("dotenv");
 
+
+
 dotenv.config();
 const PORT = process.env.PORT;
 const MONGOURL = process.env.MONGO_URL;
 
-
+mongoose.connect(MONGOURL).then(() => {
+  console.log("Database connected");
+})
 
 const productSchema = new mongoose.Schema({
   productName: String,
   description: String,
   price: Number,
-  image: String
+
 
 })
 const productModel = mongoose.model("product", productSchema)
@@ -138,18 +142,20 @@ router.get('/admin/add-product', function (req, res) {
 router.post('/admin/add-product', async function (req, res) {
 
   console.log(req.body)
-  console.log(req.files.image)
-  mongoose.connect(MONGOURL).then(() => {
-    console.log("Database connected");
-    const newProduct = new productModel({
-      productName: req.body.productName,
-      description: req.body.description,
-      price: req.body.price,
-      image: req.body.image,
-    })
-    return newProduct.save();
 
-  })//.catch((error) => console.log("error"))
+
+  const newProduct = new productModel({
+    productName: req.body.productName,
+    description: req.body.description,
+    price: req.body.price,
+
+  })
+  const id = new mongoose.Types.ObjectId();
+  console.log(id)
+  const image = req.files.image;
+  image.mv('./public/product-images/' + id + '.jpg')
+  res.render('/admin/add-product', { title: "Add Products" })
+  return newProduct.save();
 
 
 })
