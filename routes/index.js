@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 const mongoose = require("mongoose")
 const dotenv = require("dotenv");
-
+const bcrypt = require('bcrypt');
 
 
 dotenv.config();
@@ -22,116 +22,29 @@ const productSchema = new mongoose.Schema({
 })
 const productModel = mongoose.model("product", productSchema)
 
+const userSchema = new mongoose.Schema({
+  email: String,
+  password: String
+
+})
+const userModel = mongoose.model("user", userSchema)
+
+
 
 /* GET home page. */
-router.get('/', function (req, res, next) {
-  let products = [
-    {
-      name: "Iphone 11",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://www.smartcellular.in/media/catalog/product/cache/cfaa1692031f009488d1cfea5ce7e1ee/r/_/r_1_1.jpg"
+router.get('/', async function (req, res, next) {
 
-    },
-    {
-      name: "OnePlus 7T",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://media-ik.croma.com/prod/https://media.croma.com/image/upload/v1708679170/Croma%20Assets/Communication/Mobiles/Images/250994_0_wvqdxi.png?tr=w-600"
-
-    },
-    {
-      name: "Redmi Note 10S",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDQVUgUtdfLktljb-cAxZ6loAMiQ1UJrU_xZdzH9LmQg&s"
-
-    },
-    {
-      name: "Vivo Y20",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0GjGRrJMcF0wCYJvEGKMMiNeT7k5wRzg0kpL0cCV-ag&s"
-
-    },
-
-
-  ]
+  const products = await productModel.find()
   res.render('index', { products });
 });
 
-router.get('/admin', function (req, res, next) {
-  let products = [
-    {
-      name: "Iphone 11",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://www.smartcellular.in/media/catalog/product/cache/cfaa1692031f009488d1cfea5ce7e1ee/r/_/r_1_1.jpg"
-
-    },
-    {
-      name: "OnePlus 7T",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://media-ik.croma.com/prod/https://media.croma.com/image/upload/v1708679170/Croma%20Assets/Communication/Mobiles/Images/250994_0_wvqdxi.png?tr=w-600"
-
-    },
-    {
-      name: "Redmi Note 10S",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDQVUgUtdfLktljb-cAxZ6loAMiQ1UJrU_xZdzH9LmQg&s"
-
-    },
-    {
-      name: "Vivo Y20",
-      category: "Mobile",
-      description: "Nice phone",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0GjGRrJMcF0wCYJvEGKMMiNeT7k5wRzg0kpL0cCV-ag&s"
-
-    },
-
-
-  ]
+router.get('/admin', async function (req, res, next) {
+  const products = await productModel.find()
   res.render('adminpage', { title: "Seller Login", products })
 })
 
-router.get('/admin/products', function (req, res, next) {
-  let products = [
-    {
-      name: "Iphone 11",
-      category: "Mobile",
-      description: "Rs. 1,20,000",
-      image: "https://www.smartcellular.in/media/catalog/product/cache/cfaa1692031f009488d1cfea5ce7e1ee/r/_/r_1_1.jpg"
-
-    },
-    {
-      name: "OnePlus 7T",
-      category: "Mobile",
-      description: "Rs. 63,940",
-      image: "https://media-ik.croma.com/prod/https://media.croma.com/image/upload/v1708679170/Croma%20Assets/Communication/Mobiles/Images/250994_0_wvqdxi.png?tr=w-600"
-
-    },
-    {
-      name: "Redmi Note 10S",
-      category: "Mobile",
-      description: "Rs. 14,900",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDQVUgUtdfLktljb-cAxZ6loAMiQ1UJrU_xZdzH9LmQg&s"
-
-    },
-    {
-      name: "Vivo Y20",
-      category: "Mobile",
-      description: "Rs. 23,000",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0GjGRrJMcF0wCYJvEGKMMiNeT7k5wRzg0kpL0cCV-ag&s"
-
-    },
-
-
-  ]
-
-
-
+router.get('/admin/products', async function (req, res, next) {
+  const products = await productModel.find()
   res.render('viewproducts', { title: "Products", products })
 })
 router.get('/admin/add-product', function (req, res) {
@@ -152,10 +65,67 @@ router.post('/admin/add-product', async function (req, res) {
   })
   const id = new mongoose.Types.ObjectId();
   console.log(id)
+  const idString = id.toHexString();
   const image = req.files.image;
-  image.mv('./public/product-images/' + id + '.jpg')
+  image.mv(`./public/product-images/${idString}.jpg`)
   res.render('/admin/add-product', { title: "Add Products" })
   return newProduct.save();
+
+
+})
+router.get('/signup', function (req, res) {
+  res.render('signup', { title: "Sign Up" })
+
+})
+
+router.post('/signup', async function (req, res) {
+  console.log(req.body)
+  const pw = req.body.password;
+  const saltRounds = 10; // Recommended number of rounds
+  bcrypt.genSalt(saltRounds, function (err, salt) {
+    // Hash the password using the generated salt
+    bcrypt.hash(pw, salt, function (err, hashedPassword) {
+      if (err) {
+        console.error('Error while hashing password:', err);
+      } else {
+        const newUser = new userModel({
+          email: req.body.email,
+          password: hashedPassword
+        })
+        return newUser.save();
+        console.log('Hashed password:', hashedPassword);
+      }
+    });
+  });
+
+  res.render('index', { title: "Home" })
+
+
+})
+
+router.get('/login', function (req, res) {
+  res.render("login", { title: "Login User" })
+
+
+})
+
+router.post('/login', async function (req, res) {
+  console.log(req.body);
+  email = req.body.email;
+  const user = await userModel.findOne({ email });
+  if (!user) {
+    res.status(404).send('User not found');
+  }
+  password = req.body.password;
+  const match = await bcrypt.compare(password, user.password);
+  if (match) {
+    // Passwords match, login successful
+    return res.status(200).send('Login successful');
+  } else {
+    // Passwords don't match
+    return res.status(401).send('Invalid email or password');
+  }
+
 
 
 })
