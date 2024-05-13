@@ -3,7 +3,7 @@ var router = express.Router();
 const mongoose = require("mongoose")
 const dotenv = require("dotenv");
 const bcrypt = require('bcrypt');
-
+const { response } = require('../app');
 
 dotenv.config();
 const PORT = process.env.PORT;
@@ -17,9 +17,8 @@ const productSchema = new mongoose.Schema({
   productName: String,
   description: String,
   price: Number,
-
-
 })
+
 const productModel = mongoose.model("product", productSchema)
 
 const userSchema = new mongoose.Schema({
@@ -29,13 +28,10 @@ const userSchema = new mongoose.Schema({
 })
 const userModel = mongoose.model("user", userSchema)
 
-
-
-/* GET home page. */
 router.get('/', async function (req, res, next) {
-
+  let user = req.session.user
   const products = await productModel.find()
-  res.render('index', { products });
+  res.render('index', { products, user });
 });
 
 router.get('/admin', async function (req, res, next) {
@@ -120,14 +116,18 @@ router.post('/login', async function (req, res) {
   const match = await bcrypt.compare(password, user.password);
   if (match) {
     // Passwords match, login successful
-    return res.status(200).send('Login successful');
+    req.session.loggedIn = true
+    req.session.user = user;
+    res.redirect('/');
   } else {
     // Passwords don't match
-    return res.status(401).send('Invalid email or password');
+    res.redirect('/login');
+
   }
-
-
-
 })
 
+router.get('/logout', (req, res) => {
+  req.session.destroy()
+  res.redirect('/')
+})
 module.exports = router;
