@@ -140,4 +140,44 @@ router.get('/delete-product/:id', async (req, res) => {
   }
 });
 
+router.get('/edit-product/:id', async (req, res) => {
+
+
+  const proId = req.params.id;
+  const product = await productModel.findById(proId);
+  if (product) {
+    console.log("product found");
+    console.log(product)
+
+  } else {
+    console.log("product not found");
+  }
+  res.render('edit-product', { product });
+
+})
+
+router.post('/edit-product/:id', async (req, res) => {
+  const proId = req.params.id;
+  const { productName, description, price } = req.body;
+  try {
+    const product = await productModel.findById(proId);
+    if (product) {
+      product.productName = productName;
+      product.description = description;
+      product.price = price;
+
+      await product.save();
+      console.log("Product updated:", product);
+      res.redirect('/admin/products'); // Redirect to the products page after updating
+    } else {
+      console.log("Product not found");
+      res.status(404).send('Product not found');
+    }
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).send('Internal server error');
+  }
+
+});
+
 module.exports = router;
